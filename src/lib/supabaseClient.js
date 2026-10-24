@@ -2,6 +2,21 @@ import { createClient } from '@supabase/supabase-js';
 
 const STORAGE_CONFIG_KEY = 'voxnote_supabase_config';
 
+function sanitizeEnvValue(raw, expectedKeyName) {
+  if (!raw || typeof raw !== 'string') return '';
+  let val = raw.trim();
+  if (expectedKeyName && val.startsWith(`${expectedKeyName}=`)) {
+    val = val.slice(expectedKeyName.length + 1).trim();
+  }
+  if (
+    (val.startsWith('"') && val.endsWith('"')) ||
+    (val.startsWith("'") && val.endsWith("'"))
+  ) {
+    val = val.slice(1, -1).trim();
+  }
+  return val.replace(/\/+$/, '');
+}
+
 function getStoredConfig() {
   if (typeof window === 'undefined') return null;
   try {
@@ -31,24 +46,34 @@ function isValidAnonKey(key) {
 
 const storedConfig = getStoredConfig();
 
-const supabaseUrl = isValidSupabaseUrl(import.meta.env.VITE_SUPABASE_URL)
-  ? import.meta.env.VITE_SUPABASE_URL
-  : storedConfig?.url;
+const envUrl = sanitizeEnvValue(
+  import.meta.env.VITE_SUPABASE_URL,
+  'VITE_SUPABASE_URL'
+);
+const envAnonKey = sanitizeEnvValue(
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  'VITE_SUPABASE_ANON_KEY'
+);
 
-const supabaseAnonKey = isValidAnonKey(import.meta.env.VITE_SUPABASE_ANON_KEY)
-  ? import.meta.env.VITE_SUPABASE_ANON_KEY
-  : storedConfig?.anonKey;
+export const activeSupabaseUrl = isValidSupabaseUrl(envUrl)
+  ? envUrl
+  : sanitizeEnvValue(storedConfig?.url, 'VITE_SUPABASE_URL');
+
+export const activeSupabaseAnonKey = isValidAnonKey(envAnonKey)
+  ? envAnonKey
+  : sanitizeEnvValue(storedConfig?.anonKey, 'VITE_SUPABASE_ANON_KEY');
 
 export const isSupabaseConfigured =
-  isValidSupabaseUrl(supabaseUrl) && isValidAnonKey(supabaseAnonKey);
+  isValidSupabaseUrl(activeSupabaseUrl) &&
+  isValidAnonKey(activeSupabaseAnonKey);
 
 export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(activeSupabaseUrl, activeSupabaseAnonKey)
   : null;
 
 export function saveRuntimeSupabaseConfig(url, anonKey) {
-  const cleanUrl = url.trim();
-  const cleanKey = anonKey.trim();
+  const cleanUrl = sanitizeEnvValue(url, 'VITE_SUPABASE_URL');
+  const cleanKey = sanitizeEnvValue(anonKey, 'VITE_SUPABASE_ANON_KEY');
   if (!isValidSupabaseUrl(cleanUrl) || !isValidAnonKey(cleanKey)) {
     throw new Error(
       "Veuillez fournir une URL Supabase valide (https://...) et une clé publique 'anon' valide."
@@ -66,4 +91,6 @@ export function clearRuntimeSupabaseConfig() {
   window.location.reload();
 }
 
-export const hasRuntimeConfig = Boolean(storedConfig?.url && storedConfig?.anonKey);
+export const hasRuntimeConfig = Boolean(
+  storedConfig?.url && storedConfig?.anonKey
+);
