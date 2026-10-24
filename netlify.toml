@@ -1,0 +1,18 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Redirection Single Page Application (SPA) pour React
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Autoriser explicitement le microphone (Web Speech) et la caméra sur le domaine HTTPS
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Permissions-Policy = "camera=(self), microphone=(self)"
