@@ -35,6 +35,7 @@ import { compressImageFile } from '../utils/imageUtils';
 import SupabaseSetupModal from './SupabaseSetupModal';
 import CameraCaptureModal from './CameraCaptureModal';
 import PhotoLightboxModal from './PhotoLightboxModal';
+import WhatsAppShareModal, { WhatsAppIcon } from './WhatsAppShareModal';
 
 const SPEECH_LANGUAGES = [
   { code: 'fr-FR', label: 'Français (FR)' },
@@ -95,6 +96,7 @@ export default function NotesDashboard({
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
+  const [whatsappNote, setWhatsappNote] = useState(null);
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
 
   const formRef = useRef(null);
@@ -936,7 +938,7 @@ export default function NotesDashboard({
                           : 'border-slate-200/90 hover:border-slate-300'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="text-base font-semibold text-slate-900 break-words">
@@ -963,8 +965,18 @@ export default function NotesDashboard({
                           </div>
                         </div>
 
-                        {/* Actions de la carte : Ajouter photo, Copier, Modifier, Supprimer */}
-                        <div className="flex items-center gap-1 shrink-0">
+                        {/* Actions de la carte : WhatsApp, Ajouter photo, Copier, Modifier, Supprimer */}
+                        <div className="flex items-center flex-wrap gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setWhatsappNote(note)}
+                            title="Envoyer cette note via WhatsApp"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-[#25D366]/12 text-[#128C7E] hover:bg-[#25D366] hover:text-white border border-[#25D366]/30 transition cursor-pointer"
+                          >
+                            <WhatsAppIcon className="h-3.5 w-3.5" />
+                            <span>WhatsApp</span>
+                          </button>
+
                           <button
                             type="button"
                             onClick={() =>
@@ -1122,6 +1134,11 @@ export default function NotesDashboard({
       <SupabaseSetupModal
         isOpen={isSetupModalOpen}
         onClose={() => setIsSetupModalOpen(false)}
+      />
+
+      <WhatsAppShareModal
+        note={whatsappNote}
+        onClose={() => setWhatsappNote(null)}
       />
     </div>
   );
