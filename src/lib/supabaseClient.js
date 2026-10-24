@@ -1,15 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 
-const STORAGE_CONFIG_KEY = 'voxnote_supabase_config';
+// Identifiants publics du projet Supabase VoxNote (clé publishable protégée par RLS)
+const DEFAULT_SUPABASE_URL = 'https://fhtrsqgokkvekvidmpuj.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY =
+  'sb_publishable_pM3Moa9iwYRhyjLM8DxRAQ_ScS2bEXj';
 
-function getStoredConfig() {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_CONFIG_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
+function sanitizeEnvValue(raw, expectedKeyName) {
+  if (!raw || typeof raw !== 'string') return '';
+  let val = raw.trim();
+  if (expectedKeyName && val.startsWith(`${expectedKeyName}=`)) {
+    val = val.slice(expectedKeyName.length + 1).trim();
   }
+  if (
+    (val.startsWith('"') && val.endsWith('"')) ||
+    (val.startsWith("'") && val.endsWith("'"))
+  ) {
+    val = val.slice(1, -1).trim();
+  }
+  return val.replace(/\/+$/, '');
 }
 
 function isValidSupabaseUrl(url) {
@@ -29,41 +37,38 @@ function isValidAnonKey(key) {
   return key.trim().length > 20;
 }
 
-const storedConfig = getStoredConfig();
+// Nettoyer toute ancienne saisie manuelle locale pour toujours utiliser la vraie base Supabase
+if (typeof window !== 'undefined') {
+  try {
+    window.localStorage.removeItem('voxnote_supabase_config');
+  } catch {
+    // Ignore
+  }
+}
 
-const supabaseUrl = isValidSupabaseUrl(import.meta.env.VITE_SUPABASE_URL)
-  ? import.meta.env.VITE_SUPABASE_URL
-  : storedConfig?.url;
+const envUrl = sanitizeEnvValue(
+  import.meta.env.VITE_SUPABASE_URL,
+  'VITE_SUPABASE_URL'
+);
+const envAnonKey = sanitizeEnvValue(
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  'VITE_SUPABASE_ANON_KEY'
+);
 
-const supabaseAnonKey = isValidAnonKey(import.meta.env.VITE_SUPABASE_ANON_KEY)
-  ? import.meta.env.VITE_SUPABASE_ANON_KEY
-  : storedConfig?.anonKey;
+export const activeSupabaseUrl = isValidSupabaseUrl(envUrl)
+  ? envUrl
+  : DEFAULT_SUPABASE_URL;
+
+export const activeSupabaseAnonKey = isValidAnonKey(envAnonKey)
+  ? envAnonKey
+  : DEFAULT_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured =
-  isValidSupabaseUrl(supabaseUrl) && isValidAnonKey(supabaseAnonKey);
+  isValidSupabaseUrl(activeSupabaseUrl) &&
+  isValidAnonKey(activeSupabaseAnonKey);
 
-export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+export const supabase = createClient(activeSupabaseUrl, activeSupabaseAnonKey);
 
-export function saveRuntimeSupabaseConfig(url, anonKey) {
-  const cleanUrl = url.trim();
-  const cleanKey = anonKey.trim();
-  if (!isValidSupabaseUrl(cleanUrl) || !isValidAnonKey(cleanKey)) {
-    throw new Error(
-      "Veuillez fournir une URL Supabase valide (https://...) et une clé publique 'anon' valide."
-    );
-  }
-  window.localStorage.setItem(
-    STORAGE_CONFIG_KEY,
-    JSON.stringify({ url: cleanUrl, anonKey: cleanKey })
-  );
-  window.location.reload();
-}
-
-export function clearRuntimeSupabaseConfig() {
-  window.localStorage.removeItem(STORAGE_CONFIG_KEY);
-  window.location.reload();
-}
-
-export const hasRuntimeConfig = Boolean(storedConfig?.url && storedConfig?.anonKey);
+export const hasRuntimeConfig = false;
+export function saveRuntimeSupabaseConfig() {}
+export function clearRuntimeSupabaseConfig() {}
