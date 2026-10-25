@@ -2,6 +2,16 @@
 
 **VoxNote** est une application web et mobile (**Progressive Web App — PWA**) de prise de notes multimodale développée avec **React.js (Vite)**, **Tailwind CSS** et **Supabase**. Elle permet de capturer, d'organiser, d'illustrer et de partager ses notes au **clavier**, à la **voix en temps réel** et en **photos annotées**, avec une isolation stricte des données par utilisateur grâce aux politiques **Row Level Security (RLS)**.
 
+<p align="center">
+  <img src="./visuels/01-voxnote-banniere-hero.png" alt="VoxNote — Écosystème Web et Mobile de prise de notes vocales et visuelles" width="100%" />
+</p>
+
+<p align="center">
+  <img src="./visuels/02-voxnote-dictee-vocale.png" alt="VoxNote — Dictée vocale en direct et transcription instantanée sur smartphone" width="420" />
+  <br />
+  <em>Dictée vocale en direct et transcription instantanée sur mobile</em>
+</p>
+
 ---
 
 ## ✨ Fonctionnalités principales
@@ -90,6 +100,9 @@ VoxNote/
 │   └── main.jsx                     # Point d'entrée React, ErrorBoundary & enregistrement du SW
 ├── supabase/
 │   └── schema.sql                   # Script SQL complet : table notes, bucket note-photos & règles RLS
+├── visuels/
+│   ├── 01-voxnote-banniere-hero.png # Bannière de présentation Web & Mobile
+│   └── 02-voxnote-dictee-vocale.png # Aperçu mobile de la dictée vocale en direct
 ├── .env.example                     # Modèle des variables d'environnement Supabase
 ├── index.html                       # Entrée HTML PWA, métadonnées mobiles & capture beforeinstallprompt
 ├── netlify.toml                     # Configuration de build, redirections SPA et en-têtes HTTP Netlify
