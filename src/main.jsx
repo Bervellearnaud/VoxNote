@@ -1,16 +1,21 @@
 import { StrictMode, Component } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
-import './hooks/usePwaInstall.js';
 import App from './App.jsx';
 
-// Enregistrement du Service Worker PWA
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
-      // Ignore en cas de restriction navigateur privé
-    });
-  });
+// Garantir l'enregistrement du Service Worker même si document.readyState est déjà 'complete'
+if ('serviceWorker' in navigator) {
+  const registerSW = () => {
+    navigator.serviceWorker
+      .register('/sw.js', { scope: '/' })
+      .then((reg) => reg.update())
+      .catch(() => {});
+  };
+  if (document.readyState === 'complete') {
+    registerSW();
+  } else {
+    window.addEventListener('load', registerSW);
+  }
 }
 
 class RootErrorBoundary extends Component {
