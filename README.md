@@ -3,13 +3,15 @@
 **VoxNote** est une application web et mobile (**Progressive Web App — PWA**) de prise de notes multimodale développée avec **React.js (Vite)**, **Tailwind CSS** et **Supabase**. Elle permet de capturer, d'organiser, d'illustrer et de partager ses notes au **clavier**, à la **voix en temps réel** et en **photos annotées**, avec une isolation stricte des données par utilisateur grâce aux politiques **Row Level Security (RLS)**.
 
 <p align="center">
-  <img src="./visuels/01-voxnote-banniere-hero.png" alt="VoxNote — Écosystème Web et Mobile de prise de notes vocales et visuelles" width="100%" />
+  <img src="./visuels/01-voxnote-banniere-hero.png" alt="VoxNote — Écosystème Web et Mobile PWA de prise de notes au clavier, à la voix et en photos annotées" width="100%" />
 </p>
 
 <p align="center">
-  <img src="./visuels/02-voxnote-dictee-vocale.png" alt="VoxNote — Dictée vocale en direct et transcription instantanée sur smartphone" width="420" />
-  <br />
-  <em>Dictée vocale en direct et transcription instantanée sur mobile</em>
+  <img src="./visuels/02-voxnote-mobile-dictee-notes.png" alt="VoxNote Mobile — Tableau de bord Mes notes, Dictée vocale Web Speech en direct et Partage WhatsApp" width="100%" />
+</p>
+
+<p align="center">
+  <img src="./visuels/03-voxnote-mobile-auth-camera.png" alt="VoxNote Mobile — Connexion et Inscription Supabase, Capture photo annotée et Installation PWA" width="100%" />
 </p>
 
 ---
@@ -101,8 +103,9 @@ VoxNote/
 ├── supabase/
 │   └── schema.sql                   # Script SQL complet : table notes, bucket note-photos & règles RLS
 ├── visuels/
-│   ├── 01-voxnote-banniere-hero.png # Bannière de présentation Web & Mobile
-│   └── 02-voxnote-dictee-vocale.png # Aperçu mobile de la dictée vocale en direct
+│   ├── 01-voxnote-banniere-hero.png       # Bannière principale Web & Mobile PWA fidèle à l'interface
+│   ├── 02-voxnote-mobile-dictee-notes.png # Écrans mobiles : Mes notes, Dictée vocale & WhatsApp
+│   └── 03-voxnote-mobile-auth-camera.png  # Écrans mobiles : Inscription Supabase, Caméra & PWA
 ├── .env.example                     # Modèle des variables d'environnement Supabase
 ├── index.html                       # Entrée HTML PWA, métadonnées mobiles & capture beforeinstallprompt
 ├── netlify.toml                     # Configuration de build, redirections SPA et en-têtes HTTP Netlify
