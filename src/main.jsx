@@ -1,7 +1,17 @@
 import { StrictMode, Component } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import './hooks/usePwaInstall.js';
 import App from './App.jsx';
+
+// Enregistrement du Service Worker PWA
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Ignore en cas de restriction navigateur privé
+    });
+  });
+}
 
 class RootErrorBoundary extends Component {
   constructor(props) {

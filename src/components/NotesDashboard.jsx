@@ -23,8 +23,11 @@ import {
   Eraser,
   ZoomIn,
   MessageSquareText,
+  Download,
+  WifiOff,
 } from 'lucide-react';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { usePwaInstall } from '../hooks/usePwaInstall';
 import {
   fetchNotes,
   createNote,
@@ -36,6 +39,7 @@ import SupabaseSetupModal from './SupabaseSetupModal';
 import CameraCaptureModal from './CameraCaptureModal';
 import PhotoLightboxModal from './PhotoLightboxModal';
 import WhatsAppShareModal, { WhatsAppIcon } from './WhatsAppShareModal';
+import InstallPwaModal from './InstallPwaModal';
 
 const SPEECH_LANGUAGES = [
   { code: 'fr-FR', label: 'Français (FR)' },
@@ -74,11 +78,22 @@ export default function NotesDashboard({
   onSignOut,
   onExitDemoMode,
 }) {
-  // État de la liste des notes, recherche & filtre
+  // État de la liste des notes, recherche, filtre & onglet mobile
   const [notes, setNotes] = useState([]);
   const [loadingNotes, setLoadingNotes] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState('all'); // 'all' | 'with_photos'
+  const [mobileTab, setMobileTab] = useState('notes'); // 'notes' | 'editor'
+
+  const {
+    isInstalled,
+    isIos,
+    isOnline,
+    canNativePrompt,
+    isInstallModalOpen,
+    setIsInstallModalOpen,
+    triggerInstall,
+  } = usePwaInstall();
 
   // État du formulaire Création / Édition
   const [editingNoteId, setEditingNoteId] = useState(null);
@@ -127,12 +142,33 @@ export default function NotesDashboard({
     setSpeechError,
     language,
     changeLanguage,
+    startListening,
     stopListening,
     toggleListening,
   } = useSpeechRecognition({
     onFinalTranscript: handleFinalTranscript,
     defaultLang: 'fr-FR',
   });
+
+  // Gestion des raccourcis PWA d'écran d'accueil (?action=camera | ?action=voice | ?action=new)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    if (!action) return;
+
+    if (action === 'camera') {
+      setMobileTab('editor');
+      setIsCameraModalOpen(true);
+    } else if (action === 'voice') {
+      setMobileTab('editor');
+      startListening();
+    } else if (action === 'new') {
+      setMobileTab('editor');
+    }
+
+    window.history.replaceState({}, '', window.location.pathname);
+  }, [startListening]);
 
   // Contenu affiché en temps réel dans le textarea
   const displayedContent = useMemo(() => {
@@ -190,6 +226,7 @@ export default function NotesDashboard({
       setTitle((prevTitle) =>
         prevTitle.trim() ? prevTitle : generateDefaultPhotoTitle()
       );
+      setMobileTab('editor');
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
     []
@@ -298,6 +335,7 @@ export default function NotesDashboard({
       setContent('');
       setPhotos([]);
       setOriginalPhotos([]);
+      setMobileTab('notes');
     } catch (err) {
       setCrudError(
         err.message || "Erreur lors de l'enregistrement de la note."
@@ -317,6 +355,7 @@ export default function NotesDashboard({
     setPhotos(notePhotos.map((p) => ({ ...p })));
     setOriginalPhotos(notePhotos);
     setCrudError(null);
+    setMobileTab('editor');
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (openCamera) {
       setIsCameraModalOpen(true);
@@ -437,14 +476,16 @@ export default function NotesDashboard({
         </div>
       )}
 
-      {/* Barre de navigation supérieure */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-sm shadow-indigo-600/25">
-              <Mic className="h-5 w-5" />
-            </div>
-            <div>
+      {/* Barre de navigation supérieure (adaptée mobile / encoche PWA) */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 pt-safe">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <img
+              src="/icons/icon-192.png"
+              alt="VoxNote"
+              className="h-10 w-10 rounded-xl shadow-sm shrink-0"
+            />
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-bold tracking-tight text-slate-900">
                   VoxNote
@@ -459,7 +500,7 @@ export default function NotesDashboard({
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 shrink-0">
             {statusToast && (
               <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium">
                 <Check className="h-3.5 w-3.5 text-emerald-600" />
@@ -467,24 +508,38 @@ export default function NotesDashboard({
               </div>
             )}
 
+            {!isInstalled && (
+              <button
+                type="button"
+                onClick={triggerInstall}
+                title="Installer l'application VoxNote sur votre téléphone"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-semibold transition cursor-pointer"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">Installer l&apos;appli</span>
+                <span className="md:hidden">Appli</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setIsCameraModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs shadow-indigo-600/20 transition cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs shadow-indigo-600/20 transition cursor-pointer"
             >
               <Camera className="h-3.5 w-3.5" />
               <span>Prendre une photo</span>
             </button>
 
             {!isDemoMode && user && (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <span className="hidden lg:inline-block text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg truncate max-w-[180px]">
                   {user.user_metadata?.full_name || user.email}
                 </span>
                 <button
                   type="button"
                   onClick={onSignOut}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-xs font-medium text-slate-700 transition cursor-pointer"
+                  title="Se déconnecter"
+                  className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-xs font-medium text-slate-700 transition cursor-pointer"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Déconnexion</span>
@@ -495,8 +550,18 @@ export default function NotesDashboard({
         </div>
       </header>
 
+      {/* Bandeau d'alerte si le téléphone passe hors-ligne */}
+      {!isOnline && (
+        <div className="bg-amber-500 text-white px-4 py-2 text-xs font-medium flex items-center justify-center gap-2">
+          <WifiOff className="h-3.5 w-3.5 shrink-0" />
+          <span>
+            Mode hors connexion détecté — rétablissez Internet avant d&apos;enregistrer vos modifications sur Supabase.
+          </span>
+        </div>
+      )}
+
       {/* Contenu principal : Formulaire (gauche) + Liste des notes (droite) */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 pb-24 lg:pb-8">
         {crudError && (
           <div className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4 flex items-start justify-between gap-3 text-sm text-red-700">
             <div className="flex items-start gap-2.5">
@@ -517,7 +582,9 @@ export default function NotesDashboard({
           {/* COLONNE GAUCHE : Formulaire Création / Édition + Micro + Photos */}
           <section
             ref={formRef}
-            className="lg:col-span-5 lg:sticky lg:top-24 bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden"
+            className={`${
+              mobileTab === 'editor' ? 'block' : 'hidden lg:block'
+            } lg:col-span-5 lg:sticky lg:top-24 bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden`}
           >
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-2">
@@ -559,7 +626,7 @@ export default function NotesDashboard({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ex : Croquis réunion, Facture matériel, Idées..."
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 transition"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-base sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 transition"
                 />
               </div>
 
@@ -774,7 +841,7 @@ export default function NotesDashboard({
                   value={displayedContent}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Écrivez votre note au clavier ou cliquez sur « Dicter » pour transcrire votre voix en direct..."
-                  className={`w-full px-3.5 py-3 rounded-xl border text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition resize-y ${
+                  className={`w-full px-3.5 py-3 rounded-xl border text-base sm:text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition resize-y ${
                     isListening
                       ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500 bg-red-50/10'
                       : 'border-slate-300 focus:ring-indigo-500/30 focus:border-indigo-600'
@@ -828,7 +895,11 @@ export default function NotesDashboard({
           </section>
 
           {/* COLONNE DROITE : Tableau de bord & Liste des notes */}
-          <section className="lg:col-span-7 space-y-5">
+          <section
+            className={`${
+              mobileTab === 'notes' ? 'block' : 'hidden lg:block'
+            } lg:col-span-7 space-y-5`}
+          >
             {/* Barre de recherche & filtres */}
             <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <div className="relative flex-1">
@@ -838,7 +909,7 @@ export default function NotesDashboard({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Rechercher par titre, texte ou note sur une photo..."
-                  className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none transition"
+                  className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none transition"
                 />
               </div>
 
@@ -1114,7 +1185,84 @@ export default function NotesDashboard({
         </div>
       </main>
 
-      {/* Modales : Caméra, Visionneuse plein écran & Configuration Supabase */}
+      {/* Barre de navigation inférieure native sur Mobile (< lg) */}
+      <nav
+        aria-label="Navigation mobile"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 pb-safe shadow-[0_-4px_20px_rgba(15,23,42,0.06)]"
+      >
+        <div className="grid grid-cols-4 h-16 max-w-lg mx-auto px-2">
+          <button
+            type="button"
+            onClick={() => setMobileTab('notes')}
+            className={`flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition cursor-pointer ${
+              mobileTab === 'notes'
+                ? 'text-indigo-600'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <div className="relative">
+              <FileText className="h-5 w-5" />
+              {notes.length > 0 && (
+                <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center">
+                  {notes.length}
+                </span>
+              )}
+            </div>
+            <span>Mes notes</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setMobileTab('editor')}
+            className={`flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition cursor-pointer ${
+              mobileTab === 'editor' && !isListening
+                ? 'text-indigo-600'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            {editingNoteId ? (
+              <Edit3 className="h-5 w-5" />
+            ) : (
+              <Plus className="h-5 w-5" />
+            )}
+            <span>{editingNoteId ? 'Éditer' : 'Écrire'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMobileTab('editor');
+              toggleListening();
+            }}
+            className={`flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition cursor-pointer ${
+              isListening
+                ? 'text-red-600 animate-pulse'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            {isListening ? (
+              <MicOff className="h-5 w-5" />
+            ) : (
+              <Mic className="h-5 w-5" />
+            )}
+            <span>{isListening ? 'Stop' : 'Dicter'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMobileTab('editor');
+              setIsCameraModalOpen(true);
+            }}
+            className="flex flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-indigo-600 transition cursor-pointer"
+          >
+            <Camera className="h-5 w-5" />
+            <span>Photo</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Modales : Caméra, Visionneuse, WhatsApp, Installation PWA & Configuration Supabase */}
       <CameraCaptureModal
         isOpen={isCameraModalOpen}
         onClose={() => setIsCameraModalOpen(false)}
@@ -1139,6 +1287,14 @@ export default function NotesDashboard({
       <WhatsAppShareModal
         note={whatsappNote}
         onClose={() => setWhatsappNote(null)}
+      />
+
+      <InstallPwaModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        isIos={isIos}
+        canNativePrompt={canNativePrompt}
+        onTriggerNativePrompt={triggerInstall}
       />
     </div>
   );

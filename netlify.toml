@@ -5,14 +5,26 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# Redirection Single Page Application (SPA) pour React
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# Type MIME standard et rafraîchissement immédiat pour le manifeste PWA & Service Worker
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json; charset=utf-8"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 # Autoriser explicitement le microphone (Web Speech) et la caméra sur le domaine HTTPS
 [[headers]]
   for = "/*"
   [headers.values]
     Permissions-Policy = "camera=(self), microphone=(self)"
+
+# Redirection Single Page Application (SPA) pour React
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
