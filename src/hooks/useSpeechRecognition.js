@@ -76,7 +76,11 @@ export function useSpeechRecognition({ onFinalTranscript, defaultLang = 'fr-FR' 
 
     const recognition = new Recognition();
     recognition.lang = language;
-    recognition.continuous = true;
+    // Sur Android Chrome, continuous=true peut répéter les segments : on utilise continuous=false
+    // combiné au redémarrage automatique dans onend pour une dictée fluide sans doublons.
+    const isAndroid =
+      typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+    recognition.continuous = !isAndroid;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
