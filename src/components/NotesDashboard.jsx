@@ -88,6 +88,8 @@ export default function NotesDashboard({
   const {
     isInstalled,
     isIos,
+    isAndroid,
+    isInAppBrowser,
     isOnline,
     canNativePrompt,
     isInstallModalOpen,
@@ -1293,6 +1295,8 @@ export default function NotesDashboard({
         isOpen={isInstallModalOpen}
         onClose={() => setIsInstallModalOpen(false)}
         isIos={isIos}
+        isAndroid={isAndroid}
+        isInAppBrowser={isInAppBrowser}
         canNativePrompt={canNativePrompt}
         onTriggerNativePrompt={triggerInstall}
       />

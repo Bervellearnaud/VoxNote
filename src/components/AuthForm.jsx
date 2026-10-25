@@ -152,6 +152,8 @@ export default function AuthForm() {
   const {
     isInstalled,
     isIos,
+    isAndroid,
+    isInAppBrowser,
     canNativePrompt,
     isInstallModalOpen,
     setIsInstallModalOpen,
@@ -747,6 +749,8 @@ export default function AuthForm() {
         isOpen={isInstallModalOpen}
         onClose={() => setIsInstallModalOpen(false)}
         isIos={isIos}
+        isAndroid={isAndroid}
+        isInAppBrowser={isInAppBrowser}
         canNativePrompt={canNativePrompt}
         onTriggerNativePrompt={triggerInstall}
       />

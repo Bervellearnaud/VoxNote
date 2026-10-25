@@ -5,17 +5,25 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# Type MIME standard et rafraîchissement immédiat pour le manifeste PWA & Service Worker
+# En-têtes stricts pour la validation Android WebAPK & PWA
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 [[headers]]
   for = "/manifest.webmanifest"
   [headers.values]
-    Content-Type = "application/manifest+json; charset=utf-8"
+    Content-Type = "application/manifest+json"
     Cache-Control = "public, max-age=0, must-revalidate"
 
 [[headers]]
   for = "/sw.js"
   [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
     Cache-Control = "public, max-age=0, must-revalidate"
+    Service-Worker-Allowed = "/"
 
 # Autoriser explicitement le microphone (Web Speech) et la caméra sur le domaine HTTPS
 [[headers]]

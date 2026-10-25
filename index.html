@@ -15,15 +15,51 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="VoxNote" />
+    <meta name="application-name" content="VoxNote" />
 
+    <!-- Icônes PNG + SVG pour installation PWA & création de raccourci Android/iOS -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/icons/favicon-32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="manifest" href="/manifest.json" />
 
     <title>VoxNote — Notes Vocales & Photos</title>
+
+    <!-- Capture immédiate de l'invitation d'installation Android/Chrome avant le chargement du bundle -->
+    <script>
+      window.__voxnoteDeferredPrompt = null;
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__voxnoteDeferredPrompt = e;
+        window.dispatchEvent(new Event('voxnote-install-ready'));
+      });
+      window.addEventListener('appinstalled', function () {
+        window.__voxnoteDeferredPrompt = null;
+        window.dispatchEvent(new Event('voxnote-installed'));
+      });
+    </script>
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased selection:bg-indigo-100 selection:text-indigo-900">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        var registerVoxNoteSW = function () {
+          navigator.serviceWorker
+            .register('/sw.js', { scope: '/' })
+            .then(function (reg) {
+              reg.update();
+            })
+            .catch(function () {});
+        };
+        if (document.readyState === 'complete') {
+          registerVoxNoteSW();
+        } else {
+          window.addEventListener('load', registerVoxNoteSW);
+        }
+      }
+    </script>
   </body>
 </html>
